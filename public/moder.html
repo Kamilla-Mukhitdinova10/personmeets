@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <link rel="stylesheet" type="text/css" href="/css/moder.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;500;700&family=Poppins:wght@100;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <button class="menu-toggle-btn">
+                    <span class="material-symbols-outlined">
+                        menu
+                    </span>
+                </button>
+                <img src="/materials/backrotate (2).gif" class="logo_img">
+                <h3>PersonMeets</h3>
+            </div>
+            <div class="nav-menu">
+                <a href="/profile" class="profile" id="profileName"><span id="usernameDisplay"></span></a>
+                <a class="logout-btn" href="/logout">signout</a>
+            </div>
+        </header>
+        <aside class="aside">
+            <sidebar>
+                <ul>
+                    <li class="sidebar-item active">
+                        <a href="/profile" id="profileLink">
+                            <span class="material-symbols-outlined">
+                                account_circle
+                            </span>
+                                Profile
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="/post/posts" id="postLink">
+                            <span class="material-symbols-outlined">
+                                newspaper
+                            </span>
+                            Posts
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="" id="addLink">
+                            <span class="material-symbols-outlined">
+                                add
+                            </span>
+                            Add post
+                        </a>
+                    </li>
+                    <li class="sidebar-item close">
+                        <a href="" id="close-btn">
+                            <span class="material-symbols-outlined">
+                                close
+                            </span>
+                            Close
+                        </a>
+                    </li>
+
+                </ul>
+            </sidebar>
+        </aside>
+        <div class="content" id="content">
+        </div>
+        <div class="addbutton" id="addbutton"></div>
+        <div class="add-content">
+            <p>talented programmer who combines technical expertise, attention to detail, and a passion for problem-solving. </p>
+            <br>
+            
+            <p>made by:</p>
+            <h2>september</h3>
+            <p class="full-stack-dev">&lt;full-stack developer/&gt;</p>
+        </div>
+    </div>  
+    <script src="scripts/moder.js"></script>
+</body>
+</html>
