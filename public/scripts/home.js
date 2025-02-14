@@ -49,29 +49,56 @@
     async function authFetch(url, options = {}) {
         let token = localStorage.getItem('accessToken');
         if (!options.headers) options.headers = {};
-        // Если тело запроса не является FormData, выставляем Content-Type
+    
+        // Устанавливаем Content-Type, если тело запроса не является FormData
         if (!options.headers['Content-Type'] && !(options.body instanceof FormData)) {
             options.headers['Content-Type'] = 'application/json';
         }
+    
+        // Добавляем токен в заголовок Authorization, если он существует
         if (token) {
             options.headers['Authorization'] = `Bearer ${token}`;
         }
+    
         let response = await fetch(url, options);
+    
+        // Если статус 401 или 403, пытаемся обновить токен
         if (response.status === 401 || response.status === 403) {
             try {
                 const newToken = await refreshToken();
+    
+                // Если токен успешно обновлен, повторяем запрос
                 if (newToken) {
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     response = await fetch(url, options);
                 } else {
-                    localStorage.clear();
+                    // Если обновление токена не удалось, перенаправляем на страницу логина
+                    clearAuthData();
                     window.location.href = '/login';
+                    return null; // Прерываем выполнение
                 }
-            } catch (e) {
-                console.error("Failed to refresh token", e);
+            } catch (error) {
+                console.error("Failed to refresh token:", error);
+                clearAuthData();
+                window.location.href = '/login';
+                return null; // Прерываем выполнение
             }
         }
+    
+        // Проверяем, что ответ успешный
+        if (!response.ok) {
+            const errorMessage = `HTTP error! Status: ${response.status}`;
+            console.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+    
         return response;
+    }
+    
+    // Вспомогательная функция для очистки данных аутентификации
+    function clearAuthData() {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
     }
 
 
