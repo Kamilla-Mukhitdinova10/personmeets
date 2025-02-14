@@ -24,6 +24,17 @@
                 <a href="/register">Doesn't have an account?</a>
                 <button type="submit" class="submit-btn">sign in</button>
             </form>
+
+            <!-- Форма для ввода кода -->
+            <div id="verificationForm" style="display: none;">
+                <h2>Enter Verification Code</h2>
+                <div id="codeErrorMsg" style="color: red; display: none;"></div>
+                <div class="input-field">
+                    <label for="verificationCode" class="code-label">Verification Code</label>
+                    <input id="verificationCode" type="text" class="code-input" name="verificationCode">
+                </div>
+                <button id="verifyButton" class="submit-btn">Verify</button>
+            </div>
         </div> 
     </div>
     <script src="/scripts/login.js"></script>
