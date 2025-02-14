@@ -37,18 +37,18 @@ body {
     align-items: center;
 }
 
-.form-container form .input-field {
+.input-field {
     margin: 10px 0px;
     gap: 10px;
     display: flex;
     flex-direction: column;
 }
 
-.form-container form .input-field label {
+.input-field label {
     font-size: 18px;
 }
 
-.form-container form .input-field input {
+.input-field input {
     font-family: 'Poppins', sans-serif;
     padding: 4px;
     font-size: 15px;
@@ -59,7 +59,7 @@ body {
     border: 1px solid white;
 }
 
-.form-container form .input-field input:focus {
+.input-field input:focus {
     border: 1px solid rgb(255, 0, 0);
 }
 
@@ -73,7 +73,7 @@ body {
     text-decoration: underline;
 }
 
-.form-container form button{
+.button{
     margin-top: 10px;
     width: 48%;
     height: 40px;
@@ -88,7 +88,20 @@ body {
     transition: all 0.3s ease;
 }
 
-.form-container form button:hover {
+button:hover {
     background-color: rgb(255, 255, 255);
     color: black;
 }
+
+/* .submit-btn {
+    padding: 5px;
+    border: 1px solid white;
+    background-color: transparent;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    background-color: white;
+    color: black;
+} */
