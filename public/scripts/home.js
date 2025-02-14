@@ -7,10 +7,13 @@
     const postLink = document.getElementById('postLink');
     const usersLink = document.getElementById('usersLink');
     const friendsLink = document.getElementById('friendsLink');
+    const lecturesLink = document.getElementById('lecturesLink');
+    const quizLink     = document.getElementById('quizLink');
     const profileName = document.getElementById('profileName');
     const profileLink = document.getElementById('profileLink');
     const contentBlock = document.getElementById('content');
     const addButton = document.getElementById('addLink');
+    
 
     //
     // Функция для обновления access токена через refresh токен
@@ -60,6 +63,9 @@
                 if (newToken) {
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     response = await fetch(url, options);
+                } else {
+                    localStorage.clear();
+                    window.location.href = '/login';
                 }
             } catch (e) {
                 console.error("Failed to refresh token", e);
@@ -68,8 +74,6 @@
         return response;
     }
 
-    // При загрузке страницы пытаемся обновить токен (если это необходимо)
-    await refreshToken();
 
     //
     // Примеры использования authFetch для всех защищённых запросов
@@ -368,6 +372,7 @@
         profileLink.classList.remove('active');
         postLink.classList.remove('active');
         quizLink.classList.remove('active');
+        lecturesLink.classList.remove('active');
         event.target.classList.add('active');
         contentBlock.innerHTML = '';
         try {
@@ -550,16 +555,241 @@
         }
     }
 
-    const quizLink = document.getElementById('quizLink');
+    // Функция для загрузки списка лекций
+    async function loadLectures() {
+        try {
+            const res = await authFetch('/lectures');
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status} - ${res.statusText}`);
+            }
+            const lectures = await res.json();
+            renderLecturesList(lectures);
+        } catch (error) {
+            console.error("Error loading lectures:", error);
+        }
+    }
+
+    // Отрисовка списка лекций
+    function renderLecturesList(lectures) {
+        contentBlock.innerHTML = '';
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        lectureBlock.innerHTML = '<h1>Lectures</h1>';
+        const listDiv = document.createElement('div');
+        listDiv.classList.add('lectures-list');
+    
+        lectures.forEach(lecture => {
+            const item = document.createElement('div');
+            item.classList.add('lecture-item');
+            item.innerHTML = `
+                <h2>${lecture.title}</h2>
+                <p>${lecture.description || ''}</p>
+                <button class="create-btn" onclick="viewLecture(${lecture.id})">View</button>
+            `;
+            listDiv.appendChild(item);
+        });
+        lectureBlock.appendChild(listDiv);
+        contentBlock.appendChild(lectureBlock);
+    }
+
+    // Просмотр конкретной лекции
+    window.viewLecture = async function(lectureId) {
+        try {
+            // Получаем саму лекцию
+            const lectureRes = await authFetch(`/lectures/${lectureId}`);
+            if (!lectureRes.ok) throw new Error(`Error: ${lectureRes.status}`);
+            const lecture = await lectureRes.json();
+
+            // Список квизов для этой лекции
+            const quizRes = await authFetch(`/lectures/${lectureId}/quizzes`);
+            let quizzes = [];
+            if (quizRes.ok) {
+                quizzes = await quizRes.json();
+            }
+            contentBlock.innerHTML = ''
+            const containerLectureView = document.createElement('div')
+            containerLectureView.classList.add("lecture-block-container")
+
+            let html = `
+                <h1>${lecture.title}</h1>
+                <p>${lecture.description || ''}</p>
+                <div>${lecture.content || ''}</div>
+                <hr/>
+                ${ lecture.video_url ? `<div><iframe src="${lecture.video_url}" width="100%" height="315"></iframe></div>` : '' }
+                <hr/>
+                <h2 style="margin-top:10px">Quizzes for this lecture:</h2>
+            `;
+            if (quizzes.length === 0) {
+                html += `<p>No quizzes for this lecture.</p>`;
+            } else {
+                quizzes.forEach(q => {
+                    html += `
+                        <div class="quiz-list-item">
+                            <h4>${q.title}</h4>
+                            <button class="edit-btn" onclick="takeQuiz(${q.id})">Take quiz</button>
+                        </div>
+                    `;
+                });
+            }
+            html += `<button class="create-btn" id="backToLecturesBtn">Back to Lectures</button>`;
+            
+            containerLectureView.innerHTML = html;
+            contentBlock.appendChild(containerLectureView)
+            document.getElementById('backToLecturesBtn').addEventListener('click', loadLectures);
+        } catch(e) {
+            console.error(e);
+        }
+    };
+
+    window.takeQuiz = async function(quizId) {
+        try {
+            const questionsRes = await authFetch(`/quizzes/${quizId}/questions`);
+            if (!questionsRes.ok) {
+                throw new Error(`Error: ${questionsRes.status}`);
+            }
+            const questions = await questionsRes.json();
+            renderQuiz(quizId, questions);
+        } catch(e) {
+            console.error('Error loading quiz questions:', e);
+        }
+    };
+
+    function renderQuiz(quizId, questions) {
+        contentBlock.innerHTML = '';
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        let html = `<h2>Quiz #${quizId}</h2>`;
+        if (questions.length === 0) {
+            html += `<p>No questions found for this quiz.</p>`;
+            contentBlock.innerHTML = html;
+            return;
+        }
+        html += `<form id="quizForm">`;
+        questions.forEach(questionObj => {
+            const qId = questionObj.id;
+            let opts = questionObj.options;
+            if (typeof opts === 'string') {
+                try {
+                    opts = JSON.parse(opts);
+                } catch(e) {
+                    console.error("Error parsing options:", e);
+                }
+            }
+            html += `
+                <div class="quiz-question-block">
+                    <h3>${questionObj.question}</h3>
+            `;
+            opts.forEach((opt, idx) => {
+                html += `
+                    <label>
+                        <input type="radio" name="q-${qId}" value="${idx}"> ${opt}
+                    </label><br/>
+                `;
+            });
+            html += `</div>`;
+        });
+        html += `</form>
+                 <button class="edit-btn" id="submitQuizBtn">Submit Quiz</button>
+                 <div id="quizResult"></div>
+        `;
+        lectureBlock.innerHTML = html;
+        contentBlock.appendChild(lectureBlock)
+
+        document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+            const answers = [];
+            questions.forEach(qObj => {
+                const qId = qObj.id;
+                const radios = document.querySelectorAll(`input[name="q-${qId}"]`);
+                let userAnswer = null;
+                radios.forEach(r => {
+                    if (r.checked) {
+                        userAnswer = parseInt(r.value, 10);
+                    }
+                });
+                answers.push({ questionId: qId, answer: userAnswer });
+            });
+
+            try {
+                const subRes = await authFetch('/quiz/submit', {
+                    method: 'POST',
+                    body: JSON.stringify({ answers })
+                });
+                const subData = await subRes.json();
+                document.getElementById('quizResult').innerHTML = `
+                    <h3>Your score: ${subData.score} / ${subData.total}</h3>
+                `;
+            } catch(e) {
+                console.error('Error submitting quiz answers:', e);
+            }
+        });
+    }
+
+
     if (quizLink) {
-        quizLink.addEventListener('click', function(event) {
-            event.preventDefault();
-            // Убираем active с других вкладок
+        quizLink.addEventListener('click', async (e) => {
+            e.preventDefault();
             profileLink.classList.remove('active');
             postLink.classList.remove('active');
-            usersLink && usersLink.classList.remove('active');
+            usersLink?.classList.remove('active');
+            lecturesLink?.classList.remove('active');
             quizLink.classList.add('active');
-            loadQuiz();
+
+            try {
+                // GET /quiz/results => [{quiz_id, score, total, created_at}, ...]
+                const res = await authFetch('/quiz/results');
+                if (!res.ok) {
+                    throw new Error(`Error: ${res.status}`);
+                }
+                const results = await res.json();
+                renderQuizResults(results);
+            } catch(e) {
+                console.error('Error loading quiz results:', e);
+            }
+        });
+    }
+
+    function renderQuizResults(results) {
+        contentBlock.innerHTML =''
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        lectureBlock.innerHTML = '<h1>Your Quiz Results</h1>';
+        if (results.length === 0) {
+            lectureBlock.innerHTML += '<p>No results yet.</p>';
+            return;
+        }
+        let html = `<table>
+                      <thead>
+                        <tr>
+                          <th>Quiz ID</th>
+                          <th>Score</th>
+                          <th>Total</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>`;
+        results.forEach(r => {
+            html += `<tr>
+                        <td>${r.quiz_id}</td>
+                        <td>${r.score}</td>
+                        <td>${r.total}</td>
+                        <td>${r.created_at || ''}</td>
+                     </tr>`;
+        });
+        html += `</tbody></table>`;
+        lectureBlock.innerHTML += html;
+        contentBlock.appendChild(lectureBlock)
+    }
+
+    // ====== События для Lectures Link =====
+    if (lecturesLink) {
+        lecturesLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            profileLink.classList.remove('active');
+            postLink.classList.remove('active');
+            quizLink && quizLink.classList.remove('active');
+            usersLink && usersLink.classList.remove('active');
+            lecturesLink.classList.add('active');
+            loadLectures();
         });
     }
 

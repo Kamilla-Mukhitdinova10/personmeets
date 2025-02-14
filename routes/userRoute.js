@@ -3,7 +3,7 @@ const router = new Router()
 const userController = require('../controllers/userController')
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware')
 
-router.get('/profile', authenticateToken, userController.getUserInfo)
+router.get('/profile', userController.getUserInfo)
 router.post('/register', userController.createUser)
 router.post('/login', userController.logUser)
 router.post('/verify', userController.verifyCode);

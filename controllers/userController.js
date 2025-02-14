@@ -53,8 +53,19 @@ class UserController {
             // Сохранение кода в сессии
             req.session.verificationCode = verificationCode;
             req.session.tempUser = user;
+            req.session.user = user;
 
-            res.json({ message: 'Verification code sent to your email' });
+            await db.query(`UPDATE refresh_tokens SET is_valid=false WHERE user_id=$1`, [user.id]);
+
+            const accessToken = generateAccessToken(user);
+            const refreshToken = generateRefreshToken(user);
+
+            await db.query(`
+                INSERT INTO refresh_tokens (user_id, refresh_token)
+                VALUES ($1, $2)
+            `, [user.id, refreshToken]);
+            
+            res.json({ accessToken, refreshToken, role: user.role });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Error during login' });
@@ -83,6 +94,13 @@ class UserController {
         const { refreshToken } = req.body;
 
         try {
+            const result = await db.query(
+                `SELECT * FROM refresh_tokens WHERE refresh_token=$1 AND is_valid=true`,
+                [refreshToken]
+            );
+            if (result.rows.length === 0) {
+                return res.status(401).json({ error: 'Refresh token invalid or revoked' });
+            }
             const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
             const user = await db.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
 

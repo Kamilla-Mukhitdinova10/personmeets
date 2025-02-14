@@ -220,7 +220,7 @@ body {
     color: rgb(143, 143, 143);
 }
 
-.content .content-block .post-block .post-btn-container .edit-btn{
+.edit-btn{
     padding: 5px;
     font-size: 15px;
     background-color: transparent;
@@ -229,12 +229,11 @@ body {
     transition: all 0.3s ease;
     cursor: pointer;
 }
-
-.content .content-block .post-block .post-btn-container .edit-btn:hover{
+.edit-btn:hover{
     background-color: rgb(90, 255, 129);
 }
 
-.content .content-block .post-block .post-btn-container .delete-btn{
+.delete-btn{
     padding: 5px;
     font-size: 15px;
     background-color: transparent;
@@ -244,10 +243,23 @@ body {
     cursor: pointer;
 }
 
-.content .content-block .post-block .post-btn-container .delete-btn:hover{
+.delete-btn:hover{
     background-color: rgb(166, 0, 0);
 }
 
+.manage-btn{
+    padding: 5px;
+    font-size: 15px;
+    background-color: transparent;
+    border: 1px solid blue;
+    color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.manage-btn:hover{
+    background-color: blue;
+}
 table {
     width: 100%;
     border-collapse: collapse;
@@ -319,6 +331,37 @@ table tr td:last-child {
     color: black;
 }
 
+.lecture-block-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+}
+
+.lecture-create-container {
+    display: flex;
+    flex-direction: column;
+    width: 75%;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.create-btn {
+    border: 1px solid white;
+    padding: 5px;
+    font-size: 15px;
+    background-color: transparent;
+    color: white;
+    cursor: pointer;
+    transition: all 0.5s ease;
+}
+
+.create-btn:hover {
+    border: 1px solid white;
+    background-color: white;
+    color: black;
+}
 
 @media screen and (min-width: 1025px){
     .container{

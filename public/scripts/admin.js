@@ -6,8 +6,611 @@
     const userLink = document.getElementById('userLink');
     const profileLink = document.getElementById('profileLink');
     const postLink = document.getElementById('postLink');
+    const manageLecturesBtn = document.getElementById('manageLecturesBtn');
+    const manageQuizzesBtn = document.getElementById('manageQuizzesBtn');
     const profileName = document.getElementById('profileName');
     const contentBlock2 = document.getElementById('content'); // основной контейнер для вывода контента
+
+    if (manageLecturesBtn) {
+        manageLecturesBtn.addEventListener('click', loadLecturesAdmin);
+    }
+    if (manageQuizzesBtn) {
+        manageQuizzesBtn.addEventListener('click', loadLecturesForQuizzes);
+    }
+
+    async function loadLecturesForQuizzes(e) {
+        userLink.classList.remove("active")
+        profileLink.classList.remove("active")
+        postLink.classList.remove("active")
+        manageLecturesBtn.classList.remove("active")
+        manageQuizzesBtn.classList.add("active")
+        if (e) e.preventDefault();
+        try {
+            const res = await authFetch('/lectures');
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status}`);
+            }
+            const lectures = await res.json();
+            renderLecturesForQuizzes(lectures);
+        } catch (error) {
+            console.error('Error loading lectures for quizzes:', error);
+        }
+    }
+
+    function renderLecturesForQuizzes(lectures) {
+        contentBlock2.innerHTML = '';
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        lectureBlock.innerHTML = `
+            <h2 style="margin-top:20px">Manage Quizzes (Select Lecture)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Quizzes</th>
+                    </tr>
+                </thead>
+                <tbody id="quizLecturesTableBody"></tbody>
+            </table>
+        `;
+        contentBlock2.appendChild(lectureBlock)
+        const body = document.getElementById('quizLecturesTableBody');
+        lectures.forEach(lecture => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${lecture.id}</td>
+                <td>${lecture.title}</td>
+                <td>
+                    <button class="create-btn" style="padding:5px; border:1px solid white;" onclick="manageQuizzesForLecture(${lecture.id})">Manage Quizzes</button>
+                </td>
+            `;
+            body.appendChild(row);
+        });
+        contentBlock2.appendChild(lectureBlock)
+    }
+
+    window.manageQuizzesForLecture = async function(lectureId) {
+        try {
+            const res = await authFetch(`/admin/lectures/${lectureId}/quizzes`);
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status}`);
+            }
+            const quizzes = await res.json();
+            renderQuizzesAdmin(lectureId, quizzes);
+        } catch (error) {
+            console.error('Error fetching quizzes:', error);
+        }
+    }
+
+    function renderQuizzesAdmin(lectureId, quizzes) {
+        contentBlock2.innerHTML = '';
+        console.log(quizzes)
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        lectureBlock.innerHTML = `
+            <h2 style="margin:20px 0">Manage Quizzes for Lecture #${lectureId}</h2>
+            <button class="create-btn"  id="createQuizBtn">Create New Quiz</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Quiz</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="quizzesTableBody"></tbody>
+            </table>
+            <button class="create-btn" id="backLectureQuizzez">Back to Lectures</button>
+        `;
+        contentBlock2.appendChild(lectureBlock)
+        const body = document.getElementById('quizzesTableBody');
+        
+        quizzes.forEach(q => {
+            body.innerHTML += `
+                <tr>
+                    <td>${q.id}</td>
+                    <td>${q.title}</td>
+                    <td>
+                        <button class="edit-btn"  onclick="editQuiz(${q.id})">Edit</button>
+                        <button class="delete-btn"  onclick="deleteQuiz(${q.id}, ${lectureId})">Delete</button>
+                        <button class="manage-btn" style="border: 1px solid blue;" onclick="manageQuestions(${q.id})">Manage Questions</button>
+                    </td>
+                </tr>
+            `;
+        });
+        document.getElementById('createQuizBtn').addEventListener('click', () => showCreateQuizForm(lectureId));
+        document.getElementById('backLectureQuizzez').addEventListener('click', () => loadLecturesForQuizzes());
+    }
+
+    window.manageQuestions = async function(quizId) {
+        try {
+            const res = await authFetch(`/quizzes/${quizId}/questions`);
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status}`);
+            }
+            const questions = await res.json();
+            renderQuestions(quizId, questions);
+        } catch (error) {
+            console.error('Error fetching quiz questions:', error);
+        }
+    };
+
+    function renderQuestions(quizId, questions) {
+        contentBlock2.innerHTML = `
+        <div class="lecture-block-container">
+            <h2 style="margin:20px 0">Manage Questions for Quiz #${quizId}</h2>
+            <button class="create-btn" id="createQuestionBtn">Create New Question</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Question</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="questionsTableBody"></tbody>
+            </table>
+        </div>
+        `;
+        const body = document.getElementById('questionsTableBody');
+        questions.forEach(q => {
+            body.innerHTML += `
+                <tr>
+                    <td>${q.id}</td>
+                    <td>${q.question}</td>
+                    <td>
+                        <button class="edit-btn" onclick="editQuestion(${quizId}, ${q.id})">Edit</button>
+                        <button class="delete-btn" onclick="deleteQuestion(${quizId}, ${q.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('createQuestionBtn').addEventListener('click', () => showCreateQuestionForm(quizId));
+    }
+
+    function showCreateQuestionForm(quizId) {
+        contentBlock2.innerHTML = `
+        <div class="lecture-create-container">
+            <h2>Create Question for Quiz #${quizId}</h2>
+            <div style="display: flex; flex-direction: column">
+                <label>Question:</label>
+                <input type="text" id="newQQuestion" placeholder="Enter question text">
+            </div>
+            <div id="optionsContainer">
+                <label>Options:</label>
+                <div>
+                    <input type="text" class="option-input" placeholder="Option #1">
+                </div>
+            </div>
+            <button class="create-btn" id="addOptionBtn">Add Option</button>
+            <div>
+                <label>Correct Option Index:</label>
+                <input type="number" id="newQCorrect" value="0" min="0">
+            </div>
+            <div style="width:100%; display: flex; gap: 10px; flex-direction: row; margin-top: 20px;">
+                <button class="edit-btn" style="width:50%"  id="saveQuestionBtn">Save</button>
+                <button class="delete-btn" style="width:50%" id="cancelQuestionBtn">Cancel</button>
+            </div>
+            </div>
+        `;
+
+        // Добавляем логику добавления вариантов
+        document.getElementById('addOptionBtn').addEventListener('click', () => {
+            const container = document.getElementById('optionsContainer');
+            const row = document.createElement('div');
+            row.innerHTML = `<input type="text" class="option-input" placeholder="Next option">`;
+            container.appendChild(row);
+        });
+
+        document.getElementById('saveQuestionBtn').addEventListener('click', async () => {
+            const question = document.getElementById('newQQuestion').value;
+            const correct_option = parseInt(document.getElementById('newQCorrect').value, 10);
+            const options = Array.from(document.querySelectorAll('.option-input')).map(i => i.value).filter(o => o.trim() !== '');
+            if (!question || options.length === 0 || correct_option < 0 || correct_option >= options.length) {
+                alert('Fill all fields properly');
+                return;
+            }
+            try {
+                // POST /admin/quizzes/:quizId/questions
+                const res = await authFetch(`/admin/quizzes/${quizId}/questions`, {
+                    method: 'POST',
+                    body: JSON.stringify({ question, options, correct_option })
+                });
+                if (!res.ok) {
+                    throw new Error(`Error: ${res.status}`);
+                }
+                manageQuestions(quizId);
+            } catch (error) {
+                console.error('Error creating question:', error);
+            }
+        });
+        document.getElementById('cancelQuestionBtn').addEventListener('click', () => manageQuestions(quizId));
+    }
+
+    window.editQuestion = async function(quizId, questionId) {
+        try {
+            // GET /admin/quizzes/:quizId/questions/:questionId
+            const res = await authFetch(`/admin/quizzes/${quizId}/questions/${questionId}`);
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status}`);
+            }
+            const questionRow = await res.json();
+            contentBlock2.innerHTML = `
+            <div class="lecture-create-container">
+                <h2 style="margin-top:20px">Edit Question #${questionRow.id} for Quiz #${quizId}</h2>
+                <div style="display: flex; flex-direction: column">
+                    <label>Question:</label>
+                    <input type="text" id="editQQuestion" value="${questionRow.question}">
+                </div>
+                <div id="optionsContainer">
+                    <label>Options:</label>
+                </div>
+                <button class="create-btn" id="addOptionBtn">Add Option</button>
+                <div>
+                    <label>Correct Option Index:</label>
+                    <input type="number" id="editQCorrect" value="${questionRow.correct_option}" min="0">
+                </div>
+                <div style="width:100%; display: flex; gap: 10px; flex-direction: row; margin-top: 20px;">
+                <button class="edit-btn" style="width:50%" id="updateQuestionBtn">Update</button>
+                <button class="delete-btn" style="width:50%" id="cancelEditQuestionBtn">Cancel</button>
+                </div>
+                </div>
+            `;
+            // Рендерим имеющиеся варианты
+            const container = document.getElementById('optionsContainer');
+            let opts = typeof questionRow.options === 'string' ? JSON.parse(questionRow.options) : questionRow.options;
+            opts.forEach((opt) => {
+                const row = document.createElement('div');
+                row.innerHTML = `<input type="text" class="option-input" value="${opt}">`;
+                container.appendChild(row);
+            });
+            // Кнопка добавить вариант
+            document.getElementById('addOptionBtn').addEventListener('click', () => {
+                const row = document.createElement('div');
+                row.innerHTML = `<input type="text" class="option-input" placeholder="New option">`;
+                container.appendChild(row);
+            });
+            // Обновить вопрос
+            document.getElementById('updateQuestionBtn').addEventListener('click', async () => {
+                const newQuestion = document.getElementById('editQQuestion').value;
+                const newCorrect = parseInt(document.getElementById('editQCorrect').value, 10);
+                const optionValues = Array.from(document.querySelectorAll('.option-input'))
+                                          .map(i => i.value)
+                                          .filter(o => o.trim() !== '');
+                if (!newQuestion || optionValues.length === 0 || newCorrect < 0 || newCorrect >= optionValues.length) {
+                    alert('Fill all fields properly');
+                    return;
+                }
+                try {
+                    // PUT /admin/quizzes/:quizId/questions/:questionId
+                    const updateRes = await authFetch(`/admin/quizzes/${quizId}/questions/${questionId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            question: newQuestion,
+                            options: optionValues,
+                            correct_option: newCorrect
+                        })
+                    });
+                    if (!updateRes.ok) {
+                        throw new Error(`Error: ${updateRes.status}`);
+                    }
+                    manageQuestions(quizId);
+                } catch (error) {
+                    console.error('Error updating question:', error);
+                }
+            });
+            // Cancel
+            document.getElementById('cancelEditQuestionBtn').addEventListener('click', () => manageQuestions(quizId));
+        } catch (error) {
+            console.error('Error editing question:', error);
+        }
+    };
+
+    window.deleteQuestion = async function(quizId, questionId) {
+        const confirmDelete = confirm('Are you sure you want to delete this question?');
+        if (confirmDelete) {
+            try {
+                // DELETE /admin/quizzes/:quizId/questions/:questionId
+                const res = await authFetch(`/admin/quizzes/${quizId}/questions/${questionId}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) {
+                    throw new Error(`Error: ${res.status}`);
+                }
+                manageQuestions(quizId);
+            } catch (error) {
+                console.error('Error deleting question:', error);
+            }
+        }
+    };
+
+    function showCreateQuizForm(lectureId) {
+        contentBlock2.innerHTML = `
+        <div class="lecture-create-container">
+            <h2 style="margin-top:20px">Create Quiz for Lecture #${lectureId}</h2>
+            <div style="display: flex; flex-direction: column">
+                <label>Title:</label>
+                <input type="text" id="newQuizTitle" placeholder="Quiz title">
+            </div>
+            <div style="width:100%; display: flex; gap: 10px; flex-direction: row; margin-top: 20px;">
+                    <button class="edit-btn" style="width:50%" id="saveQuizBtn">Save</button>
+                    <button class="delete-btn" style="width:50%" id="cancelQuizBtn">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('saveQuizBtn').addEventListener('click', async () => {
+            const title = document.getElementById('newQuizTitle').value;
+            if (!title) {
+                alert("Enter quiz title");
+                return;
+            }
+            try {
+                // POST /admin/lectures/:lectureId/quizzes
+                const res = await authFetch(`/admin/lectures/${lectureId}/quizzes`, {
+                    method: 'POST',
+                    body: JSON.stringify({ title })
+                });
+                if (!res.ok) {
+                    throw new Error(`Error: ${res.status}`);
+                }
+                manageQuizzesForLecture(lectureId);
+            } catch (error) {
+                console.error('Error creating quiz:', error);
+            }
+        });
+        document.getElementById('cancelQuizBtn').addEventListener('click', () => manageQuizzesForLecture(lectureId));
+    }
+
+    
+    window.editQuiz = async function (quizId) {
+        try {
+            const res = await authFetch(`/admin/quizzes/${quizId}`);
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status} - ${res.statusText}`);
+            }
+            const quiz = await res.json();
+    
+            // Очищаем контейнер и создаем форму редактирования
+            contentBlock2.innerHTML = `
+                <div class="lecture-create-container">
+                    <h2>Edit Quiz #${quiz.id}</h2>
+                    <div  style="display: flex; flex-direction: column">
+                        <label>Title:</label>
+                        <input type="text" id="editQuizTitle" value="${quiz.title}">
+                    </div>
+                    <div style="width:100%; display: flex; gap: 10px; flex-direction: row; margin-top: 20px;">
+                        <button id="updateQuizBtn" class="edit-btn" style="width:50%">Update</button>
+                        <button id="cancelEditQuizBtn" class="delete-btn" style="width:50%">Cancel</button>
+                    </div>
+                </div>
+            `;
+    
+            // Контейнер для вариантов ответов
+            document.getElementById('updateQuizBtn').addEventListener('click', async () => {
+                const newTitle = document.getElementById('editQuizTitle').value;
+                try {
+                    // PUT /admin/quizzes/:quizId
+                    const updateRes = await authFetch(`/admin/quizzes/${quizId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ title: newTitle })
+                    });
+                    if (!updateRes.ok) {
+                        throw new Error(`Error: ${updateRes.status}`);
+                    }
+                    // Возвращаемся к списку квизов
+                    manageQuizzesForLecture(quiz.lecture_id);
+                } catch (error) {
+                    console.error('Error updating quiz:', error);
+                }
+            });
+            document.getElementById('cancelEditQuizBtn').addEventListener('click', () => manageQuizzesForLecture(quiz.lecture_id));
+        } catch (error) {
+            console.error('Error editing quiz:', error);
+        }
+    };
+
+    window.deleteQuiz = async function(quizId, lectureId) {
+        const confirmDelete = confirm('Are you sure you want to delete this quiz?');
+        if (confirmDelete) {
+            try {
+                const res = await authFetch(`/admin/quizzes/${quizId}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    throw new Error(`Error: ${res.status}`);
+                }
+                manageQuizzesForLecture(lectureId);
+            } catch (error) {
+                console.error('Error deleting quiz:', error);
+            }
+        }
+    }
+
+
+    async function loadLecturesAdmin(event) {
+        userLink.classList.remove("active")
+        profileLink.classList.remove("active")
+        postLink.classList.remove("active")
+        manageQuizzesBtn.classList.remove("active")
+        manageLecturesBtn.classList.add("active")
+        if (event) event.preventDefault();
+        try {
+            const res = await authFetch('/lectures'); // GET /admin/lectures
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status}`);
+            }
+            const lectures = await res.json();
+            renderLecturesAdmin(lectures);
+        } catch (error) {
+            console.error('Error loading lectures for admin:', error);
+        }
+    }
+
+    function renderLecturesAdmin(lectures) {
+        contentBlock2.innerHTML = '';
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        lectureBlock.innerHTML = `
+            <h2 style="margin:20px 0">Manage Lectures</h2>
+            <button id="createLectureBtn" class="create-btn">Create New Lecture</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Decription</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="lecturesTableBody"></tbody>
+            </table>
+        `;
+        contentBlock2.appendChild(lectureBlock)
+        const body = document.getElementById('lecturesTableBody');
+        lectures.forEach(lecture => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${lecture.id}</td>
+                <td>${lecture.title}</td>
+                <td>${lecture.description}</td>
+                <td>
+                    <button class="edit-btn" onclick="editLecture(${lecture.id})">Edit</button>
+                    <button class="delete-btn" onclick="deleteLecture(${lecture.id})">Delete</button>
+                </td>
+            `;
+            body.appendChild(row);
+        });
+        contentBlock2.appendChild(lectureBlock)
+        document.getElementById('createLectureBtn').addEventListener('click', showCreateLectureForm);
+        
+    }
+
+    async function showCreateLectureForm() {
+        contentBlock2.innerHTML = '';
+        const lectureBlock = document.createElement('div')
+        lectureBlock.classList.add("lecture-block-container")
+        lectureBlock.innerHTML = `
+        <div class="lecture-create-container">
+            <h3>Create Lecture</h3>
+            <div style="display:flex; flex-direction:column;">
+                <label>Title: </label><input type="text" id="newTitle">
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label>Description: </label><textarea id="newDesc"></textarea>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label>Content: </label><textarea id="newContent"></textarea>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label>Video URL: </label><input type="text" id="newVideoUrl">
+            </div>
+            <div style="display:flex; flex-direction:row; margin-top:20px; width:100%; gap: 10px">
+                <button class="edit-btn" style="width: 50%" id="saveLectureBtn"">Save</button>
+                <button class="delete-btn" style="width: 50%" id="cancelLectureBtn">Cancel</button>
+            </div>
+        </div>
+        `;
+
+        contentBlock2.appendChild(lectureBlock)
+        document.getElementById('saveLectureBtn').addEventListener('click', createLecture);
+        document.getElementById('cancelLectureBtn').addEventListener('click', loadLecturesAdmin);
+        
+    }
+
+    async function createLecture() {
+        const title = document.getElementById('newTitle').value;
+        const description = document.getElementById('newDesc').value;
+        const content = document.getElementById('newContent').value;
+        const video_url = document.getElementById('newVideoUrl').value;
+        try {
+            const res = await authFetch('/admin/lectures', {
+                method: 'POST',
+                body: JSON.stringify({ title, description, content, video_url })
+            });
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status} - ${res.statusText}`);
+            }
+            await loadLecturesAdmin();
+        } catch (error) {
+            console.error('Error creating lecture:', error);
+        }
+    }
+
+    window.editLecture = async function(lectureId) {
+        try {
+            const res = await authFetch(`/lectures/${lectureId}`);
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status} - ${res.statusText}`);
+            }
+            const lecture = await res.json();
+            contentBlock2.innerHTML = '';
+            const lectureBlock = document.createElement('div')
+            lectureBlock.classList.add("lecture-block-container")
+            lectureBlock.innerHTML = `
+            <div class="lecture-create-container">
+                <h2>Edit Lecture #${lecture.id}</h2>
+                <div style="display: flex; flex-direction: column">
+                    <label>Title: </label>
+                    <input type="text" id="editTitle" value="${lecture.title}">
+                </div>
+                <div style="display: flex; flex-direction: column">
+                    <label>Description: </label>
+                    <textarea id="editDesc">${lecture.description || ''}</textarea>
+                </div>
+                <div style="display: flex; flex-direction: column">
+                    <label>Content: </label>
+                    <textarea id="editContent">${lecture.content || ''}</textarea>
+                </div>
+                <div style="display: flex; flex-direction: column">
+                    <label>Video URL: </label>
+                    <input type="text" id="editVideoUrl" value="${lecture.video_url || ''}">
+                </div>
+                <div style="display:flex; flex-direction:row; margin-top:20px; width:100%; gap: 10px">
+                <button class="edit-btn" style="width: 50%"  id="updateLectureBtn">Update</button>
+                <button class="delete-btn" style="width: 50%"  id="cancelEditBtn">Cancel</button>
+                </div>
+            </div>
+            `;
+            contentBlock2.appendChild(lectureBlock);
+            document.getElementById('updateLectureBtn').addEventListener('click', async () => {
+                const newTitle   = document.getElementById('editTitle').value;
+                const newDesc    = document.getElementById('editDesc').value;
+                const newContent = document.getElementById('editContent').value;
+                const newVideo   = document.getElementById('editVideoUrl').value;
+                try {
+                    const updateRes = await authFetch(`/admin/lectures/${lectureId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ title: newTitle, description: newDesc, content: newContent, video_url: newVideo })
+                    });
+                    if (!updateRes.ok) {
+                        throw new Error(`Error: ${updateRes.status} - ${updateRes.statusText}`);
+                    }
+                    await loadLecturesAdmin();
+                } catch (error) {
+                    console.error('Error updating lecture:', error);
+                }
+            });
+            document.getElementById('cancelEditBtn').addEventListener('click', loadLecturesAdmin);
+        } catch (error) {
+            console.error('Error editing lecture:', error);
+        }
+    }
+
+    window.deleteLecture = async function(lectureId) {
+        const confirmDelete = confirm('Are you sure you want to delete this lecture?');
+        if (confirmDelete) {
+            try {
+                const res = await authFetch(`/admin/lectures/${lectureId}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    throw new Error(`Error: ${res.status} - ${res.statusText}`);
+                }
+                await loadLecturesAdmin();
+            } catch (error) {
+                console.error('Error deleting lecture:', error);
+            }
+        }
+    }
 
     //
     // Функция для обновления access-токена через refresh-токен
@@ -58,6 +661,9 @@
                 if (newToken) {
                     options.headers['Authorization'] = `Bearer ${newToken}`;
                     response = await fetch(url, options);
+                } else {
+                    localStorage.clear();
+                    window.location.href = '/login';
                 }
             } catch (e) {
                 console.error("Failed to refresh token", e);
@@ -66,8 +672,6 @@
         return response;
     }
 
-    // При загрузке страницы пытаемся обновить токен (если необходимо)
-    await refreshToken();
 
     // Получаем имя пользователя и отображаем его
     try {
@@ -107,7 +711,9 @@
     async function profileLinkClick(event) {
         event.preventDefault();
         postLink.classList.remove('active');
-        userLink && userLink.classList.remove('active');
+        userLink.classList.remove('active');
+        manageLecturesBtn.classList.remove("active")
+        manageQuizzesBtn.classList.remove("active")
         event.target.classList.add('active');
         try {
             const res = await authFetch('/profile');
@@ -131,6 +737,9 @@
     async function postLinkClick(event) {
         event.preventDefault();
         profileLink.classList.remove('active');
+        userLink.classList.remove('active');
+        manageLecturesBtn.classList.remove("active")
+        manageQuizzesBtn.classList.remove("active")
         event.target.classList.add('active');
         try {
             const res = await authFetch('/post/posts');
@@ -262,6 +871,8 @@
         postLink.classList.remove('active');
         profileLink.classList.remove('active');
         userLink.classList.add('active');
+        manageLecturesBtn.classList.remove("active")
+        manageQuizzesBtn.classList.remove("active")
         const userTable = document.createElement('table');
         userTable.innerHTML = `
             <thead>

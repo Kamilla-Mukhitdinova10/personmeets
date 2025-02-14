@@ -1,3 +1,5 @@
+const errorMsg = document.getElementById('errorMsg');
+
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
    event.preventDefault();
    const email = document.getElementById('email').value;
@@ -7,9 +9,12 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
        body: JSON.stringify({ email, password }),
+       credentials: 'same-origin'
    });
 
    const data = await response.json();
+
+
    if (response.ok) {
        const code = prompt('Enter the verification code sent to your email:');
        const verifyResponse = await fetch('/verify', {
@@ -23,19 +28,26 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
        if (verifyResponse.ok) {
            localStorage.setItem('accessToken', verifyData.accessToken);
            localStorage.setItem('refreshToken', verifyData.refreshToken);
-
+        // localStorage.setItem('accessToken', data.accessToken);
+        // localStorage.setItem('refreshToken', data.refreshToken);
+        if (verifyData.role === "admin") {
+            window.location.href = '/admin';
+        } else {
+            window.location.href = '/';
+        }
            // Перенаправление на основе роли
-           if (verifyData.role === "admin") {
-               window.location.href = '/admin';
-           } else if (verifyData.role === "moder") {
-               window.location.href = '/moder';
-           } else {
-               window.location.href = '/';
-           }
+        //    if (verifyData.role === "admin") {
+        //        window.location.href = '/admin';
+        //    } else {
+        //        window.location.href = '/';
+        //    }
        } else {
+            errorMsg.innerText = verifyData.error;
+            errorMsg.style.display = 'block';
            alert(`Verification failed: ${verifyData.error}`);
        }
    } else {
-       alert(`Login failed: ${data.error}`);
+        errorMsg.innerText = data.error;
+        errorMsg.style.display = 'block';
    }
 });

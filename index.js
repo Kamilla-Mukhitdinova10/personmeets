@@ -2,11 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+require('dotenv').config();
+
 const userRouter = require('./routes/userRoute')
 const postRouter = require('./routes/postRoute')
 const followRouter = require('./routes/followRoute')
 const quizRouter = require('./routes/quizRoute');
-require('dotenv').config();
+const lectureRouter = require('./routes/lectureRoute');
+
 
 const PORT = 3000;
 const HOST = 'localhost';
@@ -21,14 +24,11 @@ app.use(session({
    saveUninitialized: true
 }));
 
-app.use('/moder', postRouter); 
-app.use('/moder', followRouter);  
-app.use('/admin', userRouter); 
-app.use('/admin', followRouter); 
 app.use('/', postRouter);
 app.use('/', userRouter); 
 app.use('/', followRouter); 
 app.use('/', quizRouter); 
+app.use('/', lectureRouter);
 
 app.get('/', (req, res) => {
    if (req.session.user) {
@@ -62,9 +62,9 @@ app.get('/admin', (req, res) => {
    res.sendFile(__dirname + '/public/admin.html')
 })
 
-app.get('/moder', (req, res) => {
-   res.sendFile(__dirname + '/public/moder.html')
-})
+// app.get('/moder', (req, res) => {
+//    res.sendFile(__dirname + '/public/moder.html')
+// })
 
 // app.get('/moder', (req, res) => {
 //    if (req.session.user) {

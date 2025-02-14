@@ -312,7 +312,7 @@ body {
     color: rgb(143, 143, 143);
 }
 
-.content .content-block .post-block .post-btn-container .edit-btn{
+.edit-btn{
     padding: 5px;
     font-size: 15px;
     background-color: transparent;
@@ -320,12 +320,11 @@ body {
     color: white;
     transition: all 0.5s ease;
 }
-
-.content .content-block .post-block .post-btn-container .edit-btn:hover{
+.edit-btn:hover{
     background-color: rgb(90, 255, 129);
 }
 
-.content .content-block .post-block .post-btn-container .delete-btn{
+.delete-btn{
     padding: 5px;
     font-size: 15px;
     background-color: transparent;
@@ -334,7 +333,7 @@ body {
     transition: all 0.5s ease;
 }
 
-.content .content-block .post-block .post-btn-container .delete-btn:hover{
+.delete-btn:hover{
     background-color: rgb(166, 0, 0);
 }
 
@@ -366,6 +365,60 @@ body {
     cursor: pointer;
 }
 
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+table td {
+    border: 1px solid rgb(255, 255, 255); 
+}
+table tr:first-child td {
+    border-top: 1px solid white;
+}
+table tr td:first-child {
+    border-left: 0;
+}
+table tr:last-child td {
+    border-bottom: 0;
+}
+table tr td:last-child {
+    border-right: 0;
+}
+ 
+.content th {
+    padding: 10px;
+    
+}
+.content td {
+    padding: 10px;
+}
+.content table button {
+    border: none;
+    padding: 2px 5px;
+    font-family: 'Poppins', 'sans-serif';
+    background-color: transparent;
+    outline: none;
+    color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+.content table .edit-btn{
+    border: 1px solid greenyellow;
+}
+
+.content table .edit-btn:hover{
+    background-color: rgb(90, 255, 129);
+}
+
+.content table .delete-btn{
+    border: 1px solid red;
+}
+
+.content table .delete-btn:hover{
+    background-color: rgb(166, 0, 0);
+
+}
+
 .add-content {
     grid-area: add-content;
     display: flex;
@@ -382,12 +435,44 @@ body {
     color: black;
 }
 
+.create-btn {
+    border: 1px solid white;
+    padding: 5px;
+    font-size: 15px;
+    background-color: transparent;
+    color: white;
+    cursor: pointer;
+    transition: all 0.5s ease;
+}
+
+.create-btn:hover {
+    border: 1px solid white;
+    background-color: white;
+    color: black;
+}
+
 .quiz-block {
     display: flex;
-    max-width: 100%;
+    width: 100%;
     height: 100%;
     flex-direction: column;
     padding: 20px;
+}
+
+.lecture-block-container {
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    height: 100%;
+    padding: 20px;
+}
+
+.lecture-create-container {
+    display: flex;
+    flex-direction: column;
+    width: 75%;
+    padding-top: 20px;
+    padding-bottom: 20px;
 }
 
 .quiz-question {
@@ -414,6 +499,26 @@ body {
     margin-top: 20px;
     font-size: 18px;
     text-align: center;
+  }
+
+  .lecture-item {
+    padding: 10px;
+    border: 1px solid white;
+  }
+
+  .quiz-list-item {
+    display: flex;
+    flex-direction: row;
+    margin: 10px 0;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid white;
+  }
+
+  .quiz-question-block {
+    padding: 10px;
+    border: 1px solid white;
   }
 
 @media screen and (min-width: 1025px){
