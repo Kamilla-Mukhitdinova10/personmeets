@@ -37,6 +37,8 @@
         }
     }
 
+    await refreshToken()
+
     function renderLecturesForQuizzes(lectures) {
         contentBlock2.innerHTML = '';
         const lectureBlock = document.createElement('div')
@@ -625,6 +627,7 @@
                 credentials: 'same-origin'
             });
             const data = await res.json();
+            console.log(data)
             if (data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
                 return data.accessToken;
@@ -920,24 +923,81 @@
 
     // Функция редактирования пользователя
     async function editUser(userId) {
-        const newUsername = prompt('Enter new username:');
-        const newEmail = prompt('Enter new email:');
-        const newRole = prompt('Enter new role:');
-        if (newUsername !== null && newEmail !== null && newRole !== null) {
-            try {
-                const res = await authFetch(`/users/${userId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ username: newUsername, email: newEmail, role: newRole })
-                });
-                if (!res.ok) {
-                    throw new Error(`Error: ${res.status} - ${res.statusText}`);
-                }
-            } catch (error) {
-                console.error('Error editing user:', error);
+        try {
+            // Сначала получим данные о пользователе
+            const res = await authFetch(`/users/${userId}`);
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status} - ${res.statusText}`);
             }
+            const userData = await res.json();
+    
+            // Очищаем наш основной контейнер и вставляем туда форму
+            contentBlock2.innerHTML = `
+                <div class="user-edit-container">
+                    <h2>Edit User #${userData.id}</h2>
+                    <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                        <label>Username:</label>
+                        <input type="text" id="editUsername" value="${userData.username || ''}">
+                    </div>
+                    <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                        <label>Email:</label>
+                        <input type="email" id="editEmail" value="${userData.email || ''}">
+                    </div>
+                    <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                        <label>Role:</label>
+                        <input type="text" id="editRole" value="${userData.role || ''}">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px">
+                        <button id="updateUserBtn" class="edit-btn">Save</button>
+                        <button id="cancelEditUserBtn" class="delete-btn">Cancel</button>
+                    </div>
+                </div>
+            `;
+    
+            // Навешиваем обработчики на кнопки "Save" и "Cancel"
+            document.getElementById('updateUserBtn').addEventListener('click', async () => {
+                // Берём новые значения
+                const newUsername = document.getElementById('editUsername').value.trim();
+                const newEmail = document.getElementById('editEmail').value.trim();
+                const newRole = document.getElementById('editRole').value.trim();
+    
+                if (!newUsername || !newEmail || !newRole) {
+                    alert('Please fill in username, email, and role');
+                    return;
+                }
+    
+                try {
+                    // Отправляем PUT-запрос на /users/:id
+                    const updateRes = await authFetch(`/users/${userId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ 
+                            username: newUsername, 
+                            email: newEmail, 
+                            role: newRole 
+                        })
+                    });
+                    if (!updateRes.ok) {
+                        throw new Error(`Error: ${updateRes.status} - ${updateRes.statusText}`);
+                    }
+                    alert('User updated successfully!');
+    
+                    // Возвращаемся к списку пользователей
+                    loadUsers(new Event('click'));
+                } catch (error) {
+                    console.error('Error updating user:', error);
+                }
+            });
+    
+            // Кнопка "Cancel" — просто возвращаемся к списку
+            document.getElementById('cancelEditUserBtn').addEventListener('click', () => {
+                loadUsers(new Event('click'));
+            });
+    
+        } catch (error) {
+            console.error('Error loading user data:', error);
         }
-        fetchAndRenderUsers();
     }
+    
 
     // Функция удаления пользователя
     async function deleteUser(userId) {

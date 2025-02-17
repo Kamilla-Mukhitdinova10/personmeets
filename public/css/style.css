@@ -301,8 +301,9 @@ body {
     background-color: red;
 }
 
-.content .content-block .post-block .liked {
-    background-color: red;
+.content .content-block .post-block .likeButton.liked {
+    background-color: red; /* Используйте !important, если необходимо */
+    color: white; /* Убедитесь, что цвет текста остается читаемым */
 }
 .content .content-block .post-block .white-line {
     margin: 10px 0;

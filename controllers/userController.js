@@ -60,6 +60,9 @@ class UserController {
             const accessToken = generateAccessToken(user);
             const refreshToken = generateRefreshToken(user);
 
+            req.session.accessToken = accessToken;
+            req.session.refreshToken = refreshToken;
+
             await db.query(`
                 INSERT INTO refresh_tokens (user_id, refresh_token)
                 VALUES ($1, $2)
@@ -84,8 +87,8 @@ class UserController {
         delete req.session.verificationCode;
         delete req.session.tempUser;
         
-        const accessToken = generateAccessToken(user);
-        const refreshToken = generateRefreshToken(user);
+        const accessToken = req.session.accessToken;
+        const refreshToken = req.session.refreshToken;
 
         res.json({ accessToken, refreshToken, role: user.role });
     }

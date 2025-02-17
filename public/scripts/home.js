@@ -142,6 +142,7 @@
         postLink.classList.remove('active');
         quizLink.classList.remove('active');
         usersLink.classList.remove('active');
+        lecturesLink.classList.remove('active');
         event.target.classList.add('active');
         try {
             const res = await authFetch('/profile');
@@ -259,23 +260,72 @@
     // Функция редактирования поста
     //
     async function editPost(postId) {
-        const newTitle = prompt('Enter new title:');
-        const newDescription = prompt('Enter new description:');
-        if (newTitle !== null && newDescription !== null) {
-            try {
-                const res = await authFetch(`/post/posts/${postId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ title: newTitle, description: newDescription })
-                });
-                if (!res.ok) {
-                    throw new Error(`Error: ${res.status} - ${res.statusText}`);
-                }
-                console.log('Post updated successfully');
-            } catch (error) {
-                console.error(error);
+        try {
+            // Сначала берём текущие данные поста (если нужно)
+            const res = await authFetch(`/post/onepost/${postId}`);
+            console.log(res)
+            if (!res.ok) {
+                throw new Error(`Error: ${res.status} - ${res.statusText}`);
             }
+            const postData = await res.json();
+    
+            // Очищаем блок content и вставляем форму
+            contentBlock.innerHTML = `
+                <div class="post-edit-container">
+                    <h2>Edit Post #${postId}</h2>
+                    <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                        <label>Title:</label>
+                        <input type="text" id="editPostTitle" value="${postData.title || ''}">
+                    </div>
+                    <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                        <label>Description:</label>
+                        <textarea id="editPostDescription">${postData.description || ''}</textarea>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px">
+                        <button id="updatePostBtn" class="edit-btn">Update</button>
+                        <button id="cancelEditPostBtn" class="delete-btn">Cancel</button>
+                    </div>
+                </div>
+            `;
+    
+            // Обработчик для «Update»
+            document.getElementById('updatePostBtn').addEventListener('click', async () => {
+                const newTitle = document.getElementById('editPostTitle').value.trim();
+                const newDesc = document.getElementById('editPostDescription').value.trim();
+    
+                if (!newTitle || !newDesc) {
+                    alert('Please fill in title and description');
+                    return;
+                }
+    
+                try {
+                    // Отправляем PUT-запрос для обновления
+                    const updateRes = await authFetch(`/post/posts/${postId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ title: newTitle, description: newDesc })
+                    });
+                    if (!updateRes.ok) {
+                        throw new Error(`Error: ${updateRes.status} - ${updateRes.statusText}`);
+                    }
+                    alert('Post updated successfully');
+                    
+                    // После обновления вернёмся к списку постов
+                    postLinkClick(new Event('click'));
+                } catch (error) {
+                    console.error('Error updating post:', error);
+                }
+            });
+    
+            // Кнопка «Cancel» — можно вернуть к списку постов или профилю:
+            document.getElementById('cancelEditPostBtn').addEventListener('click', () => {
+                postLinkClick(new Event('click'));
+            });
+    
+        } catch (error) {
+            console.error('Error loading post data:', error);
         }
     }
+    
 
     //
     // Функция удаления поста
@@ -300,7 +350,9 @@
     async function postLinkClick(event) {
         event.preventDefault();
         profileLink.classList.remove('active');
-        event.target.classList.add('active');
+        postLink.classList.add('active');
+        lecturesLink.classList.remove('active');
+        usersLink.classList.remove('active')
         try {
             const res = await authFetch('/post/posts');
             const posts = await res.json();
@@ -327,7 +379,7 @@
                                                             <p>${post.description}</p>
                                                             <p class="user-inform">${user.username}</p>
                                                             <p class="user-inform">${formattedDate}</p>
-                                                            <button id="likeButton" onclick="likePost(${post.id}, this)" class="likeButton">${data.likeNumber} Likes</button>
+                                                            <button id="likeButton" onclick="likePost(${post.id}, this)" class="likeButton ${post.isLiked ? 'liked' : ''}">${data.likeNumber} Likes</button>
                                                         </div>`;
                             contentBlock.appendChild(contentBlock2);
                             const likeButton = document.getElementById('likeButton');
@@ -381,14 +433,19 @@
                 const delData = await resDel.json();
                 console.log(delData);
                 likeButton.classList.remove("liked");
+                newLikeCount = delData.likeNumber;
             } else {
                 const resPut = await authFetch(`/post/like/${postId}`, { method: 'PUT' });
                 const putData = await resPut.json();
+                likeButton.classList.add("liked");
                 console.log(putData);
+                newLikeCount = putData.likeNumber;
             }
+            likeButton.innerText = `${newLikeCount} Likes`;
         } catch (error) {
             console.error('Error in likePost:', error);
         }
+        
     }
 
     //
@@ -486,25 +543,61 @@
     //
     function addLinkClick(event) {
         event.preventDefault();
-        const newTitle = prompt("Enter title: ");
-        const newDescription = prompt("Enter description: ");
-        if (newTitle !== null && newDescription !== null) {
-            authFetch("/post/addpost", {
-                method: 'POST',
-                body: JSON.stringify({ title: newTitle, description: newDescription })
-            })
-            .then(response => {
+        
+        // Очищаем главный блок и вставляем свою форму
+        contentBlock.innerHTML = `
+        <div class="post-create-container">
+            <h2>Add New Post</h2>
+            <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                <label>Title:</label>
+                <input type="text" id="newPostTitle" placeholder="Post title">
+            </div>
+            <div style="display:flex; flex-direction:column; margin-bottom:10px">
+                <label>Description:</label>
+                <textarea id="newPostDescription" placeholder="Write something..."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px">
+                <button id="saveNewPostBtn" class="edit-btn">Save</button>
+                <button id="cancelNewPostBtn" class="delete-btn">Cancel</button>
+            </div>
+        </div>
+        `;
+    
+        // Навешиваем события на кнопки "Save" и "Cancel"
+        document.getElementById('saveNewPostBtn').addEventListener('click', async () => {
+            const title = document.getElementById('newPostTitle').value.trim();
+            const description = document.getElementById('newPostDescription').value.trim();
+    
+            if (!title || !description) {
+                alert('Please fill in both title and description');
+                return;
+            }
+    
+            try {
+                // Отправляем POST-запрос на сервер
+                const response = await authFetch("/post/addpost", {
+                    method: 'POST',
+                    body: JSON.stringify({ title, description })
+                });
+    
                 if (!response.ok) {
                     throw new Error(`Error: ${response.status} - ${response.statusText}`);
                 }
-            })
-            .then(newPost => {
-                console.log('Post added successfully:', newPost);
-            })
-            .catch(error => console.error('Error adding post:', error));
-        }
+                alert('Post added successfully!');
+                
+                // После добавления можно, например, сразу показать все посты:
+                postLinkClick(new Event('click'));
+            } catch (error) {
+                console.error('Error adding post:', error);
+            }
+        });
+    
+        document.getElementById('cancelNewPostBtn').addEventListener('click', () => {
+            // Например, вернёмся к просмотру всех постов:
+            postLinkClick(new Event('click'));
+        });
     }
-
+    
     async function loadQuiz() {
         try {
             const res = await authFetch('/quiz');

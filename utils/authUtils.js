@@ -6,7 +6,7 @@ function generateAccessToken(user) {
     return jwt.sign(
         { id: user.id, username: user.username, role: user.role }, // Включаем роль
         process.env.JWT_SECRET,
-        { expiresIn: '15m' }
+        { expiresIn: '1m' }
     );
 }
 

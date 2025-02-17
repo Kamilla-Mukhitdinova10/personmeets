@@ -5,11 +5,24 @@ const session = require('express-session')
 class postController {
     async getPosts(req, res) {
         try {
-            const posts = await db.query('SELECT * FROM posts')
-            res.json(posts.rows)
+            // Получите все посты
+            const posts = await db.query('SELECT * FROM posts');
+            
+            // Получите лайки пользователя
+            const userId = req.session.user.id;
+            const likesResult = await db.query('SELECT postid FROM likes WHERE userid = $1', [userId]);
+            const likedPostIds = likesResult.rows.map(row => row.postid);
+    
+            // Добавьте информацию о лайках к постам
+            const postsWithLikes = posts.rows.map(post => ({
+                ...post,
+                isLiked: likedPostIds.includes(post.id), // Проверяем, лайкнут ли пост
+            }));
+    
+            res.json(postsWithLikes);
         } catch (error) {
-            console.error(error)
-            res.status(511).json(error)
+            console.error(error);
+            res.status(511).json(error);
         }
     }
 
@@ -17,6 +30,17 @@ class postController {
         try {
             const posts = await db.query('SELECT * FROM posts WHERE userid = $1', [req.session.user.id])
             res.json(posts.rows)
+        } catch (error) {
+            console.error(error)
+            res.status(511).json(error)
+        }
+    }
+
+    async getUserOnePost (req, res) {
+        const postId = req.params.id;
+        try {
+            const posts = await db.query('SELECT * FROM posts WHERE userid = $1 AND id=$2', [req.session.user.id, postId])
+            res.json(posts.rows[0])
         } catch (error) {
             console.error(error)
             res.status(511).json(error)
@@ -68,7 +92,9 @@ class postController {
         const userId = req.session.user.id;
         try {
             const result = await db.query('DELETE FROM likes WHERE postid = $1 AND userid =$2', [postId, userId])
-            res.json({ message: 'Like removed' });
+            const likeCountResult = await db.query('SELECT COUNT(*) AS like_number FROM likes WHERE postid = $1', [postId]);
+            const likeNumber = likeCountResult.rows[0].like_number;
+            res.json({ message: 'Like removed', likeNumber });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Error removing like' });
@@ -80,6 +106,9 @@ class postController {
         const userId = req.session.user.id;
         try {
             const result = await db.query('INSERT INTO likes (userid, postid) VALUES ($1, $2)', [userId, postId])
+            const likeCountResult = await db.query('SELECT COUNT(*) AS like_number FROM likes WHERE postid = $1', [postId]);
+            const likeNumber = likeCountResult.rows[0].like_number;
+            res.json({ message: 'Post liked', likeNumber });
             console.log(result.rows[0])
             res.json(result.rows[0])
         } catch (error) {
